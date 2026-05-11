@@ -82,6 +82,38 @@ def run_scenario(scenario: Scenario, *, approval_approved: bool = True) -> dict[
     )
 
 
+def build_hitl_review(
+    *,
+    query: str,
+    scenario_id: str,
+    expected_route: Route,
+    should_retry: bool,
+    max_attempts: int,
+) -> dict[str, Any]:
+    """Create the pending human-review payload shown before approval."""
+    return {
+        "query": query,
+        "scenario_id": scenario_id,
+        "expected_route": expected_route,
+        "should_retry": should_retry,
+        "max_attempts": max_attempts,
+        "proposed_action": f"Stage high-risk support action for review: {query}",
+    }
+
+
+def complete_hitl_review(review: dict[str, Any], *, approved: bool) -> dict[str, Any]:
+    """Resume the demo workflow after a human approval decision."""
+    return run_ticket(
+        str(review["query"]),
+        scenario_id=str(review["scenario_id"]),
+        expected_route=Route(str(review["expected_route"])),
+        requires_approval=True,
+        should_retry=bool(review["should_retry"]),
+        max_attempts=int(review["max_attempts"]),
+        approval_approved=approved,
+    )
+
+
 def summarize_state_for_ui(state: dict[str, Any]) -> dict[str, Any]:
     """Return a compact view model for Streamlit rendering."""
     events = state.get("events", []) or []
@@ -105,6 +137,9 @@ def summarize_state_for_ui(state: dict[str, Any]) -> dict[str, Any]:
         "tool_results": list(state.get("tool_results", []) or []),
         "errors": errors,
         "is_dead_letter": any("dead_letter" in error for error in errors),
+        "decision_label": "approved" if approval.get("approved") else "rejected"
+        if approval
+        else "not required",
         "events": [
             {
                 "step": index,
@@ -138,6 +173,12 @@ def resolve_hitl_button_decision(*, approve_clicked: bool, reject_clicked: bool)
     if reject_clicked:
         return False
     return None
+
+
+def _clear_review_state() -> None:
+    import streamlit as st
+
+    st.session_state.pop("pending_review", None)
 
 
 def main() -> None:
@@ -211,33 +252,22 @@ def main() -> None:
             max_attempts = st.slider("Max attempts", min_value=1, max_value=5, value=3)
             scenario_id = "custom"
 
-        approval_approved = True
-        run_clicked = False
-        if requires_approval:
-            st.caption("HITL required: choose the reviewer decision to run this workflow.")
-            approve_col, reject_col = st.columns(2)
-            with approve_col:
-                approve_clicked = st.button(
-                    "Approve and run",
-                    type="primary",
-                    use_container_width=True,
-                )
-            with reject_col:
-                reject_clicked = st.button(
-                    "Reject and run",
-                    use_container_width=True,
-                )
-            decision = resolve_hitl_button_decision(
-                approve_clicked=approve_clicked,
-                reject_clicked=reject_clicked,
-            )
-            if decision is not None:
-                approval_approved = decision
-                run_clicked = True
-        else:
-            run_clicked = st.button("Run workflow", type="primary", use_container_width=True)
+        run_clicked = st.button("Run workflow", type="primary", use_container_width=True)
 
-    if run_clicked or "last_state" not in st.session_state:
+    if run_clicked and requires_approval:
+        st.session_state.pending_review = build_hitl_review(
+            query=query,
+            scenario_id=scenario_id,
+            expected_route=expected_route,
+            should_retry=should_retry,
+            max_attempts=max_attempts,
+        )
+        st.session_state.pop("last_state", None)
+    elif run_clicked or (
+        "last_state" not in st.session_state
+        and "pending_review" not in st.session_state
+    ):
+        _clear_review_state()
         st.session_state.last_state = run_ticket(
             query,
             scenario_id=scenario_id,
@@ -245,8 +275,44 @@ def main() -> None:
             requires_approval=requires_approval,
             should_retry=should_retry,
             max_attempts=max_attempts,
-            approval_approved=bool(approval_approved),
+            approval_approved=True,
         )
+
+    if "pending_review" in st.session_state:
+        review = st.session_state.pending_review
+        st.warning("Workflow paused: human approval is required before this action continues.")
+
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("Scenario", review["scenario_id"])
+        c2.metric("Route", "risky")
+        c3.metric("Status", "Awaiting human review")
+        c4.metric("Decision", "pending")
+
+        left, right = st.columns([1.15, 0.85])
+        with left:
+            st.subheader("Ticket")
+            st.write(review["query"])
+            st.subheader("Proposed high-risk action")
+            st.write(review["proposed_action"])
+        with right:
+            st.subheader("Human decision")
+            approve_col, reject_col = st.columns(2)
+            with approve_col:
+                approve_clicked = st.button("Approve", type="primary", use_container_width=True)
+            with reject_col:
+                reject_clicked = st.button("Reject", use_container_width=True)
+
+            decision = resolve_hitl_button_decision(
+                approve_clicked=approve_clicked,
+                reject_clicked=reject_clicked,
+            )
+            if decision is not None:
+                st.session_state.last_state = complete_hitl_review(review, approved=decision)
+                _clear_review_state()
+                st.rerun()
+
+            st.json({"approval_observed": False, "approved": None, "status": "pending"})
+        return
 
     summary = summarize_state_for_ui(st.session_state.last_state)
 
