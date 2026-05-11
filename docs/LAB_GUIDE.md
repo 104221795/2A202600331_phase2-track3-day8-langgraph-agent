@@ -39,6 +39,7 @@ must route to `risky`, not `tool`, because cancellation requires approval.
 6. `metrics.py`: scenario-level and aggregate metrics.
 7. `report.py`: generated lab report based on actual metrics.
 8. `ui.py`: optional Streamlit bonus UI for manual ticket demos.
+9. `cli.py`: graph diagram export and checkpoint history/time-travel evidence.
 
 ## Step 3 - Run scenarios
 
@@ -75,18 +76,18 @@ so the graph proves it is using route logic rather than memorized scenario ids.
 
 Completed:
 
-- Streamlit UI for ticket demos.
+- Streamlit UI for ticket demos with two-step HITL review.
 - Checkpoint history evidence in generated metrics.
 - SQLite checkpointer support.
+- Graph diagram export with `export-graph`.
+- Time-travel/checkpoint history export with `demo-history`.
 
 Possible next extensions:
 
 - Switch to SQLite persistence (`checkpointer: sqlite` in `lab.yaml`) and verify state survives restart.
 - Demonstrate crash-resume with the same `thread_id`.
-- Add time-travel replay from a previous checkpoint using `get_state_history()`.
 - Enable real HITL with `LANGGRAPH_INTERRUPT=true` and build a Streamlit approval UI.
 - Add parallel fan-out for two mock tools and merge evidence.
-- Export a graph diagram and include it in the report.
 
 ## Submission checklist
 

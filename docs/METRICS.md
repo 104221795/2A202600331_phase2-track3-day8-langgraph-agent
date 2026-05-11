@@ -31,6 +31,8 @@ Current expected local result after running the expanded mock benchmark data:
 - risky/HITL scenarios observe approval events
 - retry scenarios include retry counts and error records
 - dead-letter scenarios include a final manual-review answer
+- `outputs/state_history.json` can be generated for checkpoint timeline evidence
+  with the `demo-history` command.
 
 Each scenario metric should include:
 

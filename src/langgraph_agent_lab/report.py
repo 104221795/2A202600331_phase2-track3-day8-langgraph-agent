@@ -108,13 +108,17 @@ checkpoints by setting `checkpointer: sqlite`.
 
 ## 8. Extension work
 
-Bonus extension: Streamlit UI. `langgraph_agent_lab.ui` provides an optional
-review interface for entering a ticket, inspecting route, retries, approval
-status, tool results, and the final response. It is intentionally optional so
-the core package and tests run without Streamlit installed.
+Bonus extension: Streamlit UI. `langgraph_agent_lab.ui` provides a demo
+interface for scenario selection, custom tickets, two-step HITL review,
+approval/rejection, retries, tool results, and the audit timeline.
 
-Additional extension: graph/checkpoint evidence is included in the generated
-metrics and this report.
+Additional extensions:
+
+- Graph diagram export: `export-graph` writes `docs/graph.mmd`.
+- Time-travel evidence: `demo-history` writes checkpoint snapshots to
+  `outputs/state_history.json`.
+- SQLite checkpointer support is implemented for durable recovery demos.
+- Graph/checkpoint evidence is included in the generated metrics and this report.
 
 ## 9. Improvement plan
 

@@ -34,6 +34,8 @@ This repository is implemented for the 90-100 target band:
 - `reports/lab_report.md` is generated from live metrics.
 - Bonus extension is implemented with an optional Streamlit UI in
   `src/langgraph_agent_lab/ui.py`.
+- Bonus graph diagram evidence can be generated with `export-graph`.
+- Bonus time-travel evidence can be generated with `demo-history`.
 
 ## Benchmark-readiness checklist
 
@@ -45,5 +47,7 @@ Use this list before a tutor or hidden benchmark run:
 - [ ] `run-scenarios` regenerates `outputs/metrics.json`.
 - [ ] `validate-metrics` reports `success_rate=100.00%`.
 - [ ] `reports/lab_report.md` reflects the latest scenario count.
+- [ ] `docs/graph.mmd` exists after running `export-graph`.
+- [ ] `outputs/state_history.json` exists after running `demo-history`.
 - [ ] Expanded mock scenarios in `data/sample/scenarios.jsonl` pass without any
   scenario-id-specific code.

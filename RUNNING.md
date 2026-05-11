@@ -104,7 +104,26 @@ The UI lets you enter a support ticket and inspect:
 - tool results
 - audit events
 
-## 6. Useful Demo Queries
+## 6. Generate Bonus Evidence
+
+Export the graph diagram:
+
+```bash
+/d/anaconda/python.exe -m langgraph_agent_lab.cli export-graph --output docs/graph.mmd
+```
+
+Export checkpoint history / time-travel evidence for a retry scenario:
+
+```bash
+/d/anaconda/python.exe -m langgraph_agent_lab.cli demo-history --config configs/lab.yaml --scenario-id S09_tool_retry_success --output outputs/state_history.json
+```
+
+Generated files:
+
+- `docs/graph.mmd`
+- `outputs/state_history.json`
+
+## 7. Useful Demo Queries
 
 Simple route:
 
@@ -142,7 +161,7 @@ Dead-letter route:
 System failure cannot recover after multiple attempts
 ```
 
-## 7. Checkpoint
+## 8. Checkpoint
 
 The completed checkpoint commit is:
 

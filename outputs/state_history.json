@@ -1,0 +1,274 @@
+{
+  "scenario_id": "S09_tool_retry_success",
+  "thread_id": "thread-S09_tool_retry_success",
+  "expected_route": "tool",
+  "actual_route": "tool",
+  "final_answer_present": true,
+  "history_length": 14,
+  "history": [
+    {
+      "index": 1,
+      "scenario_id": "S09_tool_retry_success",
+      "route": "tool",
+      "attempt": 2,
+      "max_attempts": 3,
+      "evaluation_result": "success",
+      "final_answer_present": true,
+      "pending_question_present": false,
+      "events_count": 12,
+      "next": [],
+      "metadata": {
+        "source": "loop",
+        "step": 12,
+        "parents": {}
+      }
+    },
+    {
+      "index": 2,
+      "scenario_id": "S09_tool_retry_success",
+      "route": "tool",
+      "attempt": 2,
+      "max_attempts": 3,
+      "evaluation_result": "success",
+      "final_answer_present": true,
+      "pending_question_present": false,
+      "events_count": 11,
+      "next": [
+        "finalize"
+      ],
+      "metadata": {
+        "source": "loop",
+        "step": 11,
+        "parents": {}
+      }
+    },
+    {
+      "index": 3,
+      "scenario_id": "S09_tool_retry_success",
+      "route": "tool",
+      "attempt": 2,
+      "max_attempts": 3,
+      "evaluation_result": "success",
+      "final_answer_present": false,
+      "pending_question_present": false,
+      "events_count": 10,
+      "next": [
+        "answer"
+      ],
+      "metadata": {
+        "source": "loop",
+        "step": 10,
+        "parents": {}
+      }
+    },
+    {
+      "index": 4,
+      "scenario_id": "S09_tool_retry_success",
+      "route": "tool",
+      "attempt": 2,
+      "max_attempts": 3,
+      "evaluation_result": "needs_retry",
+      "final_answer_present": false,
+      "pending_question_present": false,
+      "events_count": 9,
+      "next": [
+        "evaluate"
+      ],
+      "metadata": {
+        "source": "loop",
+        "step": 9,
+        "parents": {}
+      }
+    },
+    {
+      "index": 5,
+      "scenario_id": "S09_tool_retry_success",
+      "route": "tool",
+      "attempt": 2,
+      "max_attempts": 3,
+      "evaluation_result": "needs_retry",
+      "final_answer_present": false,
+      "pending_question_present": false,
+      "events_count": 8,
+      "next": [
+        "tool"
+      ],
+      "metadata": {
+        "source": "loop",
+        "step": 8,
+        "parents": {}
+      }
+    },
+    {
+      "index": 6,
+      "scenario_id": "S09_tool_retry_success",
+      "route": "tool",
+      "attempt": 1,
+      "max_attempts": 3,
+      "evaluation_result": "needs_retry",
+      "final_answer_present": false,
+      "pending_question_present": false,
+      "events_count": 7,
+      "next": [
+        "retry"
+      ],
+      "metadata": {
+        "source": "loop",
+        "step": 7,
+        "parents": {}
+      }
+    },
+    {
+      "index": 7,
+      "scenario_id": "S09_tool_retry_success",
+      "route": "tool",
+      "attempt": 1,
+      "max_attempts": 3,
+      "evaluation_result": "needs_retry",
+      "final_answer_present": false,
+      "pending_question_present": false,
+      "events_count": 6,
+      "next": [
+        "evaluate"
+      ],
+      "metadata": {
+        "source": "loop",
+        "step": 6,
+        "parents": {}
+      }
+    },
+    {
+      "index": 8,
+      "scenario_id": "S09_tool_retry_success",
+      "route": "tool",
+      "attempt": 1,
+      "max_attempts": 3,
+      "evaluation_result": "needs_retry",
+      "final_answer_present": false,
+      "pending_question_present": false,
+      "events_count": 5,
+      "next": [
+        "tool"
+      ],
+      "metadata": {
+        "source": "loop",
+        "step": 5,
+        "parents": {}
+      }
+    },
+    {
+      "index": 9,
+      "scenario_id": "S09_tool_retry_success",
+      "route": "tool",
+      "attempt": 0,
+      "max_attempts": 3,
+      "evaluation_result": "needs_retry",
+      "final_answer_present": false,
+      "pending_question_present": false,
+      "events_count": 4,
+      "next": [
+        "retry"
+      ],
+      "metadata": {
+        "source": "loop",
+        "step": 4,
+        "parents": {}
+      }
+    },
+    {
+      "index": 10,
+      "scenario_id": "S09_tool_retry_success",
+      "route": "tool",
+      "attempt": 0,
+      "max_attempts": 3,
+      "evaluation_result": null,
+      "final_answer_present": false,
+      "pending_question_present": false,
+      "events_count": 3,
+      "next": [
+        "evaluate"
+      ],
+      "metadata": {
+        "source": "loop",
+        "step": 3,
+        "parents": {}
+      }
+    },
+    {
+      "index": 11,
+      "scenario_id": "S09_tool_retry_success",
+      "route": "tool",
+      "attempt": 0,
+      "max_attempts": 3,
+      "evaluation_result": null,
+      "final_answer_present": false,
+      "pending_question_present": false,
+      "events_count": 2,
+      "next": [
+        "tool"
+      ],
+      "metadata": {
+        "source": "loop",
+        "step": 2,
+        "parents": {}
+      }
+    },
+    {
+      "index": 12,
+      "scenario_id": "S09_tool_retry_success",
+      "route": "",
+      "attempt": 0,
+      "max_attempts": 3,
+      "evaluation_result": null,
+      "final_answer_present": false,
+      "pending_question_present": false,
+      "events_count": 1,
+      "next": [
+        "classify"
+      ],
+      "metadata": {
+        "source": "loop",
+        "step": 1,
+        "parents": {}
+      }
+    },
+    {
+      "index": 13,
+      "scenario_id": "S09_tool_retry_success",
+      "route": "",
+      "attempt": 0,
+      "max_attempts": 3,
+      "evaluation_result": null,
+      "final_answer_present": false,
+      "pending_question_present": false,
+      "events_count": 0,
+      "next": [
+        "intake"
+      ],
+      "metadata": {
+        "source": "loop",
+        "step": 0,
+        "parents": {}
+      }
+    },
+    {
+      "index": 14,
+      "scenario_id": null,
+      "route": null,
+      "attempt": null,
+      "max_attempts": null,
+      "evaluation_result": null,
+      "final_answer_present": false,
+      "pending_question_present": false,
+      "events_count": 0,
+      "next": [
+        "__start__"
+      ],
+      "metadata": {
+        "source": "input",
+        "step": -1,
+        "parents": {}
+      }
+    }
+  ]
+}
