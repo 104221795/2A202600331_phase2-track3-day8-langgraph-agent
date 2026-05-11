@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any, cast
 
@@ -17,6 +18,8 @@ except ImportError:  # pragma: no cover - Streamlit executes files as scripts
     from langgraph_agent_lab.state import Route, Scenario, initial_state
 
 SCENARIOS_PATH = Path("data/sample/scenarios.jsonl")
+GRAPH_PATH = Path("docs/graph.mmd")
+STATE_HISTORY_PATH = Path("outputs/state_history.json")
 
 ROUTE_HELP = {
     "simple": "Safe direct answer",
@@ -181,6 +184,80 @@ def _clear_review_state() -> None:
     st.session_state.pop("pending_review", None)
 
 
+def load_text_artifact(path: str | Path) -> str:
+    """Read a text artifact if it exists."""
+    artifact_path = Path(path)
+    if not artifact_path.exists():
+        return ""
+    return artifact_path.read_text(encoding="utf-8")
+
+
+def load_json_artifact(path: str | Path) -> dict[str, Any]:
+    """Read a JSON artifact if it exists."""
+    text = load_text_artifact(path)
+    if not text:
+        return {}
+    return cast(dict[str, Any], json.loads(text))
+
+
+def summarize_history_artifact(payload: dict[str, Any]) -> dict[str, Any]:
+    """Return compact checkpoint-history evidence for display."""
+    history = payload.get("history", []) or []
+    retry_steps = [
+        item
+        for item in history
+        if item.get("evaluation_result") == "needs_retry"
+        or item.get("next") == ["retry"]
+    ]
+    return {
+        "scenario_id": payload.get("scenario_id", ""),
+        "thread_id": payload.get("thread_id", ""),
+        "expected_route": payload.get("expected_route", ""),
+        "actual_route": payload.get("actual_route", ""),
+        "history_length": payload.get("history_length", len(history)),
+        "retry_evidence_count": len(retry_steps),
+        "final_answer_present": payload.get("final_answer_present", False),
+    }
+
+
+def _render_evidence_tab() -> None:
+    import streamlit as st
+
+    st.subheader("Graph diagram")
+    graph_source = load_text_artifact(GRAPH_PATH)
+    if graph_source:
+        st.code(graph_source, language="markdown")
+    else:
+        st.warning("Graph diagram not found. Run `export-graph` from RUNNING.md.")
+
+    st.subheader("Checkpoint history / time travel")
+    history_payload = load_json_artifact(STATE_HISTORY_PATH)
+    if not history_payload:
+        st.warning("State history not found. Run `demo-history` from RUNNING.md.")
+        return
+
+    summary = summarize_history_artifact(history_payload)
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Scenario", str(summary["scenario_id"]))
+    c2.metric("Thread", str(summary["thread_id"]))
+    c3.metric("Snapshots", str(summary["history_length"]))
+    c4.metric("Retry evidence", str(summary["retry_evidence_count"]))
+
+    st.json(
+        {
+            "expected_route": summary["expected_route"],
+            "actual_route": summary["actual_route"],
+            "final_answer_present": summary["final_answer_present"],
+        }
+    )
+
+    history = history_payload.get("history", []) or []
+    st.dataframe(history, use_container_width=True, hide_index=True)
+
+    with st.expander("Raw checkpoint history JSON"):
+        st.json(history_payload)
+
+
 def main() -> None:
     """Launch the Streamlit review UI."""
     try:
@@ -227,146 +304,152 @@ def main() -> None:
     )
     st.markdown("</div>", unsafe_allow_html=True)
 
-    with st.sidebar:
-        mode = st.radio("Input mode", ["Scenario benchmark", "Custom ticket"])
+    workflow_tab, evidence_tab = st.tabs(["Workflow demo", "Bonus evidence"])
 
-        selected = scenarios[0]
-        if mode == "Scenario benchmark":
-            label = cast(str, st.selectbox("Testing scenario", labels, index=0))
-            selected = scenarios[labels.index(label)]
-            query = st.text_area("Ticket text", selected.query, height=120)
-            max_attempts = selected.max_attempts
-            should_retry = selected.should_retry
-            requires_approval = selected.requires_approval
-            expected_route = selected.expected_route
-            scenario_id = selected.id
-        else:
-            query = st.text_area(
-                "Ticket text",
-                "Refund this customer and send confirmation email",
-                height=120,
+    with evidence_tab:
+        _render_evidence_tab()
+
+    with workflow_tab:
+        with st.sidebar:
+            mode = st.radio("Input mode", ["Scenario benchmark", "Custom ticket"])
+
+            selected = scenarios[0]
+            if mode == "Scenario benchmark":
+                label = cast(str, st.selectbox("Testing scenario", labels, index=0))
+                selected = scenarios[labels.index(label)]
+                query = st.text_area("Ticket text", selected.query, height=120)
+                max_attempts = selected.max_attempts
+                should_retry = selected.should_retry
+                requires_approval = selected.requires_approval
+                expected_route = selected.expected_route
+                scenario_id = selected.id
+            else:
+                query = st.text_area(
+                    "Ticket text",
+                    "Refund this customer and send confirmation email",
+                    height=120,
+                )
+                expected_route = Route.SIMPLE
+                requires_approval = st.checkbox("Requires approval", value=True)
+                should_retry = st.checkbox("Simulate transient tool failure", value=False)
+                max_attempts = st.slider("Max attempts", min_value=1, max_value=5, value=3)
+                scenario_id = "custom"
+
+            run_clicked = st.button("Run workflow", type="primary", use_container_width=True)
+
+        if run_clicked and requires_approval:
+            st.session_state.pending_review = build_hitl_review(
+                query=query,
+                scenario_id=scenario_id,
+                expected_route=expected_route,
+                should_retry=should_retry,
+                max_attempts=max_attempts,
             )
-            expected_route = Route.SIMPLE
-            requires_approval = st.checkbox("Requires approval", value=True)
-            should_retry = st.checkbox("Simulate transient tool failure", value=False)
-            max_attempts = st.slider("Max attempts", min_value=1, max_value=5, value=3)
-            scenario_id = "custom"
+            st.session_state.pop("last_state", None)
+        elif run_clicked or (
+            "last_state" not in st.session_state
+            and "pending_review" not in st.session_state
+        ):
+            _clear_review_state()
+            st.session_state.last_state = run_ticket(
+                query,
+                scenario_id=scenario_id,
+                expected_route=expected_route,
+                requires_approval=requires_approval,
+                should_retry=should_retry,
+                max_attempts=max_attempts,
+                approval_approved=True,
+            )
 
-        run_clicked = st.button("Run workflow", type="primary", use_container_width=True)
+        if "pending_review" in st.session_state:
+            review = st.session_state.pending_review
+            st.warning("Workflow paused: human approval is required before this action continues.")
 
-    if run_clicked and requires_approval:
-        st.session_state.pending_review = build_hitl_review(
-            query=query,
-            scenario_id=scenario_id,
-            expected_route=expected_route,
-            should_retry=should_retry,
-            max_attempts=max_attempts,
-        )
-        st.session_state.pop("last_state", None)
-    elif run_clicked or (
-        "last_state" not in st.session_state
-        and "pending_review" not in st.session_state
-    ):
-        _clear_review_state()
-        st.session_state.last_state = run_ticket(
-            query,
-            scenario_id=scenario_id,
-            expected_route=expected_route,
-            requires_approval=requires_approval,
-            should_retry=should_retry,
-            max_attempts=max_attempts,
-            approval_approved=True,
-        )
+            c1, c2, c3, c4 = st.columns(4)
+            c1.metric("Scenario", review["scenario_id"])
+            c2.metric("Route", "risky")
+            c3.metric("Status", "Awaiting human review")
+            c4.metric("Decision", "pending")
 
-    if "pending_review" in st.session_state:
-        review = st.session_state.pending_review
-        st.warning("Workflow paused: human approval is required before this action continues.")
+            left, right = st.columns([1.15, 0.85])
+            with left:
+                st.subheader("Ticket")
+                st.write(review["query"])
+                st.subheader("Proposed high-risk action")
+                st.write(review["proposed_action"])
+            with right:
+                st.subheader("Human decision")
+                approve_col, reject_col = st.columns(2)
+                with approve_col:
+                    approve_clicked = st.button("Approve", type="primary", use_container_width=True)
+                with reject_col:
+                    reject_clicked = st.button("Reject", use_container_width=True)
 
-        c1, c2, c3, c4 = st.columns(4)
-        c1.metric("Scenario", review["scenario_id"])
-        c2.metric("Route", "risky")
-        c3.metric("Status", "Awaiting human review")
-        c4.metric("Decision", "pending")
+                decision = resolve_hitl_button_decision(
+                    approve_clicked=approve_clicked,
+                    reject_clicked=reject_clicked,
+                )
+                if decision is not None:
+                    st.session_state.last_state = complete_hitl_review(review, approved=decision)
+                    _clear_review_state()
+                    st.rerun()
+
+                st.json({"approval_observed": False, "approved": None, "status": "pending"})
+            return
+
+        summary = summarize_state_for_ui(st.session_state.last_state)
+
+        c1, c2, c3, c4, c5 = st.columns(5)
+        c1.metric("Scenario", summary["scenario_id"])
+        c2.metric("Route", summary["route"])
+        c3.metric("Status", _status_text(summary))
+        c4.metric("Attempts", f"{summary['attempt']}/{summary['max_attempts']}")
+        if summary["approval_observed"]:
+            approval_text = "approved" if summary["approval_approved"] else "not approved"
+        else:
+            approval_text = "not required"
+        c5.metric("Approval", approval_text)
+
+        if summary["is_dead_letter"]:
+            st.error("This run exhausted retries and was sent to manual review.")
+        elif summary["requires_approval"] and summary["approval_approved"] is False:
+            st.warning("The risky action was rejected and routed to clarification.")
+        elif summary["errors"]:
+            st.warning("Transient failures were observed, then the workflow recovered.")
+        else:
+            st.success("Workflow completed successfully.")
 
         left, right = st.columns([1.15, 0.85])
         with left:
             st.subheader("Ticket")
-            st.write(review["query"])
-            st.subheader("Proposed high-risk action")
-            st.write(review["proposed_action"])
+            st.write(summary["query"])
+
+            st.subheader("Final response")
+            st.write(summary["final_answer"])
+
+            st.subheader("Routing decision")
+            st.info(_route_badge(summary))
+            st.caption(summary["classification_reason"])
+
+            if summary["proposed_action"]:
+                st.subheader("HITL review")
+                st.write(summary["proposed_action"])
+                st.write(
+                    {
+                        "approval_observed": summary["approval_observed"],
+                        "approved": summary["approval_approved"],
+                    }
+                )
+
         with right:
-            st.subheader("Human decision")
-            approve_col, reject_col = st.columns(2)
-            with approve_col:
-                approve_clicked = st.button("Approve", type="primary", use_container_width=True)
-            with reject_col:
-                reject_clicked = st.button("Reject", use_container_width=True)
+            st.subheader("Tool results")
+            st.json(summary["tool_results"])
 
-            decision = resolve_hitl_button_decision(
-                approve_clicked=approve_clicked,
-                reject_clicked=reject_clicked,
-            )
-            if decision is not None:
-                st.session_state.last_state = complete_hitl_review(review, approved=decision)
-                _clear_review_state()
-                st.rerun()
+            st.subheader("Errors and retries")
+            st.json(summary["errors"])
 
-            st.json({"approval_observed": False, "approved": None, "status": "pending"})
-        return
-
-    summary = summarize_state_for_ui(st.session_state.last_state)
-
-    c1, c2, c3, c4, c5 = st.columns(5)
-    c1.metric("Scenario", summary["scenario_id"])
-    c2.metric("Route", summary["route"])
-    c3.metric("Status", _status_text(summary))
-    c4.metric("Attempts", f"{summary['attempt']}/{summary['max_attempts']}")
-    if summary["approval_observed"]:
-        approval_text = "approved" if summary["approval_approved"] else "not approved"
-    else:
-        approval_text = "not required"
-    c5.metric("Approval", approval_text)
-
-    if summary["is_dead_letter"]:
-        st.error("This run exhausted retries and was sent to manual review.")
-    elif summary["requires_approval"] and summary["approval_approved"] is False:
-        st.warning("The risky action was rejected and routed to clarification.")
-    elif summary["errors"]:
-        st.warning("Transient failures were observed, then the workflow recovered.")
-    else:
-        st.success("Workflow completed successfully.")
-
-    left, right = st.columns([1.15, 0.85])
-    with left:
-        st.subheader("Ticket")
-        st.write(summary["query"])
-
-        st.subheader("Final response")
-        st.write(summary["final_answer"])
-
-        st.subheader("Routing decision")
-        st.info(_route_badge(summary))
-        st.caption(summary["classification_reason"])
-
-        if summary["proposed_action"]:
-            st.subheader("HITL review")
-            st.write(summary["proposed_action"])
-            st.write(
-                {
-                    "approval_observed": summary["approval_observed"],
-                    "approved": summary["approval_approved"],
-                }
-            )
-
-    with right:
-        st.subheader("Tool results")
-        st.json(summary["tool_results"])
-
-        st.subheader("Errors and retries")
-        st.json(summary["errors"])
-
-    st.subheader("Audit timeline")
-    st.dataframe(summary["events"], use_container_width=True, hide_index=True)
+        st.subheader("Audit timeline")
+        st.dataframe(summary["events"], use_container_width=True, hide_index=True)
 
 
 if __name__ == "__main__":

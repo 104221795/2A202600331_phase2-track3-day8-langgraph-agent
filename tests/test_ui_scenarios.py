@@ -2,9 +2,12 @@ from langgraph_agent_lab.nodes import classify_node, intake_node
 from langgraph_agent_lab.state import Route, Scenario
 from langgraph_agent_lab.ui import (
     load_demo_scenarios,
+    load_json_artifact,
+    load_text_artifact,
     resolve_hitl_button_decision,
     run_scenario,
     scenario_label,
+    summarize_history_artifact,
     summarize_state_for_ui,
 )
 
@@ -79,3 +82,35 @@ def test_ui_hitl_buttons_map_to_explicit_decisions():
     assert resolve_hitl_button_decision(approve_clicked=True, reject_clicked=False) is True
     assert resolve_hitl_button_decision(approve_clicked=False, reject_clicked=True) is False
     assert resolve_hitl_button_decision(approve_clicked=False, reject_clicked=False) is None
+
+
+def test_ui_artifact_loaders(tmp_path):
+    text_path = tmp_path / "graph.mmd"
+    json_path = tmp_path / "history.json"
+    text_path.write_text("graph TD;", encoding="utf-8")
+    json_path.write_text('{"history": []}', encoding="utf-8")
+
+    assert load_text_artifact(text_path) == "graph TD;"
+    assert load_json_artifact(json_path) == {"history": []}
+    assert load_text_artifact(tmp_path / "missing.txt") == ""
+    assert load_json_artifact(tmp_path / "missing.json") == {}
+
+
+def test_ui_history_summary_counts_retry_evidence():
+    summary = summarize_history_artifact(
+        {
+            "scenario_id": "S09",
+            "thread_id": "thread-S09",
+            "expected_route": "tool",
+            "actual_route": "tool",
+            "final_answer_present": True,
+            "history": [
+                {"evaluation_result": "needs_retry", "next": ["retry"]},
+                {"evaluation_result": "success", "next": []},
+            ],
+        }
+    )
+
+    assert summary["scenario_id"] == "S09"
+    assert summary["history_length"] == 2
+    assert summary["retry_evidence_count"] == 1
