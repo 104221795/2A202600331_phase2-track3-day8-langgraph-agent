@@ -1,32 +1,38 @@
 # Running Guide
 
-This project was verified with the Anaconda Python interpreter on Windows:
+This guide uses Git Bash on Windows. In Git Bash, use forward slashes for
+Windows paths:
 
-```powershell
-D:\anaconda\python.exe
+```bash
+/d/anaconda/python.exe
 ```
 
 If your terminal already uses the correct Python environment, you can replace
-`D:\anaconda\python.exe -m` with `python -m`.
+`/d/anaconda/python.exe -m` with `python -m`.
+
+For PowerShell, use `D:\anaconda\python.exe` instead.
 
 ## 1. Install Dependencies
 
 Install the project with development tools:
 
-```powershell
-D:\anaconda\python.exe -m pip install -e .[dev]
+```bash
+/d/anaconda/python.exe -m pip install -e '.[dev]'
 ```
 
 Install the optional Streamlit UI extra:
 
-```powershell
-D:\anaconda\python.exe -m pip install -e .[ui]
+```bash
+/d/anaconda/python.exe -m pip install -e '.[ui]'
 ```
+
+The quotes around `'.[dev]'` and `'.[ui]'` matter in Git Bash because square
+brackets can be interpreted as filename patterns.
 
 ## 2. Run Tests
 
-```powershell
-D:\anaconda\python.exe -m pytest
+```bash
+/d/anaconda/python.exe -m pytest
 ```
 
 Expected result:
@@ -37,9 +43,9 @@ Expected result:
 
 ## 3. Run Lint and Type Checks
 
-```powershell
-D:\anaconda\python.exe -m ruff check src tests
-D:\anaconda\python.exe -m mypy src
+```bash
+/d/anaconda/python.exe -m ruff check src tests
+/d/anaconda/python.exe -m mypy src
 ```
 
 Expected result:
@@ -53,8 +59,8 @@ Success: no issues found in 11 source files
 
 Run all sample scenarios:
 
-```powershell
-D:\anaconda\python.exe -m langgraph_agent_lab.cli run-scenarios --config configs/lab.yaml --output outputs/metrics.json
+```bash
+/d/anaconda/python.exe -m langgraph_agent_lab.cli run-scenarios --config configs/lab.yaml --output outputs/metrics.json
 ```
 
 This generates:
@@ -64,8 +70,8 @@ This generates:
 
 Validate the metrics file:
 
-```powershell
-D:\anaconda\python.exe -m langgraph_agent_lab.cli validate-metrics --metrics outputs/metrics.json
+```bash
+/d/anaconda/python.exe -m langgraph_agent_lab.cli validate-metrics --metrics outputs/metrics.json
 ```
 
 Expected result:
@@ -78,8 +84,8 @@ Metrics valid. success_rate=100.00%
 
 Start the UI:
 
-```powershell
-D:\anaconda\python.exe -m streamlit run src/langgraph_agent_lab/ui.py --server.port 8501
+```bash
+/d/anaconda/python.exe -m streamlit run src/langgraph_agent_lab/ui.py --server.port 8501
 ```
 
 Open this URL in your browser:
@@ -146,7 +152,6 @@ The completed checkpoint commit is:
 
 To confirm your working tree is clean:
 
-```powershell
+```bash
 git status --short
 ```
-
