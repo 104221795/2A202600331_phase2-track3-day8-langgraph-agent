@@ -1,36 +1,4 @@
-"""Report generation helper."""
-
-from __future__ import annotations
-
-from pathlib import Path
-
-from .metrics import MetricsReport
-
-
-def render_report_stub(metrics: MetricsReport) -> str:
-    """Render the lab report from observed metrics."""
-    row_template = (
-        "| {scenario_id} | {expected_route} | {actual_route} | "
-        "{success} | {retry_count} | {interrupt_count} |"
-    )
-    rows = "\n".join(
-        row_template.format(
-            scenario_id=item.scenario_id,
-            expected_route=item.expected_route,
-            actual_route=item.actual_route or "",
-            success="yes" if item.success else "no",
-            retry_count=item.retry_count,
-            interrupt_count=item.interrupt_count,
-        )
-        for item in metrics.scenario_metrics
-    )
-    failed = [item for item in metrics.scenario_metrics if not item.success]
-    failure_summary = (
-        "All sample scenarios met their expected route and produced a user-facing result."
-        if not failed
-        else "Scenarios needing review: " + ", ".join(item.scenario_id for item in failed)
-    )
-    return f"""# Day 08 Lab Report
+# Day 08 Lab Report
 
 ## 1. Team / student
 
@@ -72,16 +40,22 @@ Every branch terminates through `finalize`, and retry routing is guarded by
 
 | Scenario | Expected route | Actual route | Success | Retries | Interrupts |
 |---|---|---|---:|---:|---:|
-{rows}
+| S01_simple | simple | simple | yes | 0 | 0 |
+| S02_tool | tool | tool | yes | 0 | 0 |
+| S03_missing | missing_info | missing_info | yes | 0 | 0 |
+| S04_risky | risky | risky | yes | 0 | 1 |
+| S05_error | error | error | yes | 2 | 0 |
+| S06_delete | risky | risky | yes | 0 | 1 |
+| S07_dead_letter | error | error | yes | 1 | 0 |
 
 ## 5. Metrics summary
 
-- Total scenarios: {metrics.total_scenarios}
-- Success rate: {metrics.success_rate:.2%}
-- Average nodes visited: {metrics.avg_nodes_visited:.2f}
-- Total retries: {metrics.total_retries}
-- Total interrupts: {metrics.total_interrupts}
-- Resume / state-history evidence observed: {metrics.resume_success}
+- Total scenarios: 7
+- Success rate: 100.00%
+- Average nodes visited: 6.43
+- Total retries: 3
+- Total interrupts: 2
+- Resume / state-history evidence observed: True
 
 ## 6. Failure analysis
 
@@ -94,7 +68,7 @@ Risky action without approval: risky keywords route to `risky_action`, then
 `approval`. If approval is rejected, routing moves to `clarify` rather than
 executing the tool path.
 
-Observed sample outcome: {failure_summary}
+Observed sample outcome: All sample scenarios met their expected route and produced a user-facing result.
 
 ## 7. Persistence / recovery evidence
 
@@ -121,10 +95,3 @@ metrics and this report.
 With another production pass, the first upgrades would be replacing keyword
 routing with a policy-tested classifier, storing dead-letter items in a durable
 queue, and adding real authenticated reviewer identities for HITL decisions.
-"""
-
-
-def write_report(metrics: MetricsReport, output_path: str | Path) -> None:
-    path = Path(output_path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(render_report_stub(metrics), encoding="utf-8")

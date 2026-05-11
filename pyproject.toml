@@ -25,9 +25,11 @@ dev = [
 ]
 sqlite = ["langgraph-checkpoint-sqlite>=2.0"]
 postgres = ["langgraph-checkpoint-postgres>=2.0"]
+ui = ["streamlit>=1.36"]
 
 [project.scripts]
 agent-lab = "langgraph_agent_lab.cli:app"
+agent-lab-ui = "langgraph_agent_lab.ui:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -38,9 +40,20 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "N", "ANN"]
-ignore = ["ANN101", "ANN102"]
+ignore = ["ANN401"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["ANN", "E402", "E501"]
 
 [tool.pytest.ini_options]
 minversion = "8.0"
 addopts = "-q --strict-markers"
 testpaths = ["tests"]
+
+[[tool.mypy.overrides]]
+module = [
+  "langgraph.checkpoint.postgres",
+  "langgraph.checkpoint.sqlite",
+  "yaml",
+]
+ignore_missing_imports = true
