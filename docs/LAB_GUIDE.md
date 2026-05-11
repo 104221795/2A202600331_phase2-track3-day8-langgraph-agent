@@ -79,13 +79,12 @@ Completed:
 - Streamlit UI for ticket demos with two-step HITL review.
 - Checkpoint history evidence in generated metrics.
 - SQLite checkpointer support.
+- Crash recovery evidence export with `demo-crash-recovery`.
 - Graph diagram export with `export-graph`.
 - Time-travel/checkpoint history export with `demo-history`.
 
 Possible next extensions:
 
-- Switch to SQLite persistence (`checkpointer: sqlite` in `lab.yaml`) and verify state survives restart.
-- Demonstrate crash-resume with the same `thread_id`.
 - Enable real HITL with `LANGGRAPH_INTERRUPT=true` and build a Streamlit approval UI.
 - Add parallel fan-out for two mock tools and merge evidence.
 

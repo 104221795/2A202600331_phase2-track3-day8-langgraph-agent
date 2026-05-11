@@ -116,6 +116,9 @@ Export checkpoint history / time-travel evidence for a retry scenario:
 
 ```bash
 /d/anaconda/python.exe -m langgraph_agent_lab.cli demo-history --config configs/lab.yaml --scenario-id S09_tool_retry_success --output outputs/state_history.json
+
+/d/anaconda/python.exe -m langgraph_agent_lab.cli demo-history-all --config configs/lab.yaml --output outputs/state_history.json
+
 ```
 
 Export checkpoint history / time-travel evidence for every scenario:
@@ -124,10 +127,23 @@ Export checkpoint history / time-travel evidence for every scenario:
 /d/anaconda/python.exe -m langgraph_agent_lab.cli demo-history-all --config configs/lab.yaml --output outputs/state_history.json
 ```
 
+Install SQLite checkpoint support:
+
+```bash
+/d/anaconda/python.exe -m pip install -e '.[sqlite]'
+```
+
+Generate crash recovery evidence with SQLite:
+
+```bash
+/d/anaconda/python.exe -m langgraph_agent_lab.cli demo-crash-recovery --config configs/lab.yaml --scenario-id S09_tool_retry_success --database-url outputs/checkpoints.sqlite --output outputs/crash_recovery.json
+```
+
 Generated files:
 
 - `docs/graph.mmd`
 - `outputs/state_history.json`
+- `outputs/crash_recovery.json`
 
 ## 7. Useful Demo Queries
 

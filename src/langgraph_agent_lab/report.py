@@ -117,6 +117,8 @@ Additional extensions:
 - Graph diagram export: `export-graph` writes `docs/graph.mmd`.
 - Time-travel evidence: `demo-history` writes checkpoint snapshots to
   `outputs/state_history.json`.
+- Crash recovery evidence: `demo-crash-recovery` rebuilds the graph/checkpointer
+  against SQLite and writes `outputs/crash_recovery.json`.
 - SQLite checkpointer support is implemented for durable recovery demos.
 - Graph/checkpoint evidence is included in the generated metrics and this report.
 

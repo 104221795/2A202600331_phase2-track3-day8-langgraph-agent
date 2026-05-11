@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from typing import Annotated, Any
+from uuid import uuid4
 
 import typer
 import yaml
@@ -170,6 +171,68 @@ def demo_history_all(
         encoding="utf-8",
     )
     typer.echo(f"Wrote all checkpoint histories to {output}")
+
+
+@app.command("demo-crash-recovery")
+def demo_crash_recovery(
+    config: Annotated[Path, typer.Option("--config")],
+    scenario_id: Annotated[str, typer.Option("--scenario-id")],
+    database_url: Annotated[
+        str,
+        typer.Option("--database-url"),
+    ] = "outputs/checkpoints.sqlite",
+    output: Annotated[Path, typer.Option("--output")] = Path("outputs/crash_recovery.json"),
+) -> None:
+    """Demonstrate SQLite checkpoint recovery across graph/checkpointer rebuilds."""
+    cfg = yaml.safe_load(config.read_text(encoding="utf-8"))
+    scenarios = load_scenarios(cfg["scenarios_path"])
+    scenario = _find_scenario(scenarios, scenario_id)
+
+    thread_id = f"crash-{scenario.id}-{uuid4().hex[:8]}"
+    first_checkpointer = build_checkpointer("sqlite", database_url)
+    first_graph = build_graph(checkpointer=first_checkpointer)
+    state = initial_state(scenario)
+    state["thread_id"] = thread_id
+    run_config = {"configurable": {"thread_id": thread_id}}
+    final_state = first_graph.invoke(state, config=run_config)
+
+    recovered_checkpointer = build_checkpointer("sqlite", database_url)
+    recovered_graph = build_graph(checkpointer=recovered_checkpointer)
+    recovered_history = [
+        _snapshot_to_record(index, snapshot)
+        for index, snapshot in enumerate(
+            recovered_graph.get_state_history(run_config),
+            start=1,
+        )
+    ]
+    recovered_state = recovered_graph.get_state(run_config)
+    recovered_values = getattr(recovered_state, "values", {}) or {}
+    payload = {
+        "scenario_id": scenario.id,
+        "thread_id": thread_id,
+        "sqlite_database": database_url,
+        "first_run": {
+            "route": final_state.get("route"),
+            "final_answer_present": bool(final_state.get("final_answer")),
+            "events_count": len(final_state.get("events", []) or []),
+        },
+        "recovered": {
+            "route": recovered_values.get("route"),
+            "final_answer_present": bool(recovered_values.get("final_answer")),
+            "events_count": len(recovered_values.get("events", []) or []),
+            "history_length": len(recovered_history),
+        },
+        "resume_success": bool(recovered_history)
+        and recovered_values.get("scenario_id") == scenario.id
+        and recovered_values.get("route") == final_state.get("route"),
+        "history": recovered_history,
+    }
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(
+        json.dumps(payload, indent=2, ensure_ascii=False, default=str),
+        encoding="utf-8",
+    )
+    typer.echo(f"Wrote crash recovery evidence to {output}")
 
 
 if __name__ == "__main__":

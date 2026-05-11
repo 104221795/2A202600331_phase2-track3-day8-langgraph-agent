@@ -20,6 +20,7 @@ except ImportError:  # pragma: no cover - Streamlit executes files as scripts
 SCENARIOS_PATH = Path("data/sample/scenarios.jsonl")
 GRAPH_PATH = Path("docs/graph.mmd")
 STATE_HISTORY_PATH = Path("outputs/state_history.json")
+CRASH_RECOVERY_PATH = Path("outputs/crash_recovery.json")
 
 ROUTE_HELP = {
     "simple": "Safe direct answer",
@@ -279,6 +280,29 @@ def _render_evidence_tab() -> None:
 
     with st.expander("Raw checkpoint history JSON"):
         st.json(selected_history)
+
+    st.subheader("Crash recovery")
+    crash_payload = load_json_artifact(CRASH_RECOVERY_PATH)
+    if not crash_payload:
+        st.warning("Crash recovery artifact not found. Run `demo-crash-recovery` from RUNNING.md.")
+        return
+
+    recovered = crash_payload.get("recovered", {}) or {}
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Scenario", str(crash_payload.get("scenario_id", "")))
+    c2.metric("Thread", str(crash_payload.get("thread_id", "")))
+    c3.metric("Recovered snapshots", str(recovered.get("history_length", 0)))
+    c4.metric("Resume success", str(crash_payload.get("resume_success", False)))
+    st.json(
+        {
+            "sqlite_database": crash_payload.get("sqlite_database"),
+            "first_run": crash_payload.get("first_run"),
+            "recovered": crash_payload.get("recovered"),
+        }
+    )
+
+    with st.expander("Raw crash recovery JSON"):
+        st.json(crash_payload)
 
 
 def main() -> None:
