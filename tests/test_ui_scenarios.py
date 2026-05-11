@@ -2,6 +2,7 @@ from langgraph_agent_lab.nodes import classify_node, intake_node
 from langgraph_agent_lab.state import Route, Scenario
 from langgraph_agent_lab.ui import (
     load_demo_scenarios,
+    resolve_hitl_button_decision,
     run_scenario,
     scenario_label,
     summarize_state_for_ui,
@@ -72,3 +73,9 @@ def test_ui_can_reject_hitl_scenario_safely():
     assert summary["approval_observed"] is True
     assert summary["approval_approved"] is False
     assert "provide the customer" in summary["final_answer"]
+
+
+def test_ui_hitl_buttons_map_to_explicit_decisions():
+    assert resolve_hitl_button_decision(approve_clicked=True, reject_clicked=False) is True
+    assert resolve_hitl_button_decision(approve_clicked=False, reject_clicked=True) is False
+    assert resolve_hitl_button_decision(approve_clicked=False, reject_clicked=False) is None

@@ -131,6 +131,15 @@ def _route_badge(summary: dict[str, Any]) -> str:
     return f"{summary['route'].upper()} - {summary['route_help']}"
 
 
+def resolve_hitl_button_decision(*, approve_clicked: bool, reject_clicked: bool) -> bool | None:
+    """Map explicit UI buttons to an approval decision."""
+    if approve_clicked:
+        return True
+    if reject_clicked:
+        return False
+    return None
+
+
 def main() -> None:
     """Launch the Streamlit review UI."""
     try:
@@ -203,16 +212,30 @@ def main() -> None:
             scenario_id = "custom"
 
         approval_approved = True
+        run_clicked = False
         if requires_approval:
-            approval_approved = bool(st.radio(
-                "HITL decision",
-                options=[True, False],
-                format_func=lambda value: "Approve" if value else "Reject",
-                index=0,
-                horizontal=True,
-            ))
-
-        run_clicked = st.button("Run workflow", type="primary", use_container_width=True)
+            st.caption("HITL required: choose the reviewer decision to run this workflow.")
+            approve_col, reject_col = st.columns(2)
+            with approve_col:
+                approve_clicked = st.button(
+                    "Approve and run",
+                    type="primary",
+                    use_container_width=True,
+                )
+            with reject_col:
+                reject_clicked = st.button(
+                    "Reject and run",
+                    use_container_width=True,
+                )
+            decision = resolve_hitl_button_decision(
+                approve_clicked=approve_clicked,
+                reject_clicked=reject_clicked,
+            )
+            if decision is not None:
+                approval_approved = decision
+                run_clicked = True
+        else:
+            run_clicked = st.button("Run workflow", type="primary", use_container_width=True)
 
     if run_clicked or "last_state" not in st.session_state:
         st.session_state.last_state = run_ticket(
