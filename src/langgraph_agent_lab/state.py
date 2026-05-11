@@ -60,6 +60,7 @@ class AgentState(TypedDict, total=False):
     final_answer: str | None
     pending_question: str | None
     proposed_action: str | None
+    approval_decision: dict[str, Any] | None
     approval: dict[str, Any] | None
     evaluation_result: str | None
     messages: Annotated[list[str], add]
@@ -102,6 +103,7 @@ def initial_state(scenario: Scenario) -> AgentState:
         "final_answer": None,
         "pending_question": None,
         "proposed_action": None,
+        "approval_decision": None,
         "approval": None,
         "evaluation_result": None,
         "messages": [],

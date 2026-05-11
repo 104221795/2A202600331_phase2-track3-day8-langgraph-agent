@@ -165,7 +165,10 @@ def approval_node(state: AgentState) -> dict:
     """
     import os
 
-    if os.getenv("LANGGRAPH_INTERRUPT", "").lower() == "true":
+    ui_decision = state.get("approval_decision")
+    if isinstance(ui_decision, dict):
+        decision = ApprovalDecision(**ui_decision)
+    elif os.getenv("LANGGRAPH_INTERRUPT", "").lower() == "true":
         from langgraph.types import interrupt
 
         value = interrupt({
