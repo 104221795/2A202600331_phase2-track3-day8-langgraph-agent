@@ -118,6 +118,12 @@ Export checkpoint history / time-travel evidence for a retry scenario:
 /d/anaconda/python.exe -m langgraph_agent_lab.cli demo-history --config configs/lab.yaml --scenario-id S09_tool_retry_success --output outputs/state_history.json
 ```
 
+Export checkpoint history / time-travel evidence for every scenario:
+
+```bash
+/d/anaconda/python.exe -m langgraph_agent_lab.cli demo-history-all --config configs/lab.yaml --output outputs/state_history.json
+```
+
 Generated files:
 
 - `docs/graph.mmd`

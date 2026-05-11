@@ -48,6 +48,29 @@ def _find_scenario(scenarios: list[Scenario], scenario_id: str) -> Scenario:
     raise typer.BadParameter(f"Unknown scenario_id={scenario_id}. Known: {known}")
 
 
+def _run_history_scenario(
+    graph: Any,
+    scenario: Scenario,
+) -> dict[str, Any]:
+    """Run one scenario and return checkpoint history evidence."""
+    state = initial_state(scenario)
+    run_config = {"configurable": {"thread_id": state["thread_id"]}}
+    final_state = graph.invoke(state, config=run_config)
+    history = [
+        _snapshot_to_record(index, snapshot)
+        for index, snapshot in enumerate(graph.get_state_history(run_config), start=1)
+    ]
+    return {
+        "scenario_id": scenario.id,
+        "thread_id": state["thread_id"],
+        "expected_route": scenario.expected_route.value,
+        "actual_route": final_state.get("route"),
+        "final_answer_present": bool(final_state.get("final_answer")),
+        "history_length": len(history),
+        "history": history,
+    }
+
+
 @app.command("run-scenarios")
 def run_scenarios(
     config: Annotated[Path, typer.Option("--config")],
@@ -116,28 +139,37 @@ def demo_history(
     scenario = _find_scenario(scenarios, scenario_id)
     checkpointer = build_checkpointer(cfg.get("checkpointer", "memory"), cfg.get("database_url"))
     graph = build_graph(checkpointer=checkpointer)
-    state = initial_state(scenario)
-    run_config = {"configurable": {"thread_id": state["thread_id"]}}
-    final_state = graph.invoke(state, config=run_config)
-    history = [
-        _snapshot_to_record(index, snapshot)
-        for index, snapshot in enumerate(graph.get_state_history(run_config), start=1)
-    ]
-    payload = {
-        "scenario_id": scenario.id,
-        "thread_id": state["thread_id"],
-        "expected_route": scenario.expected_route.value,
-        "actual_route": final_state.get("route"),
-        "final_answer_present": bool(final_state.get("final_answer")),
-        "history_length": len(history),
-        "history": history,
-    }
+    payload = _run_history_scenario(graph, scenario)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(
         json.dumps(payload, indent=2, ensure_ascii=False, default=str),
         encoding="utf-8",
     )
     typer.echo(f"Wrote checkpoint history to {output}")
+
+
+@app.command("demo-history-all")
+def demo_history_all(
+    config: Annotated[Path, typer.Option("--config")],
+    output: Annotated[Path, typer.Option("--output")],
+) -> None:
+    """Run every scenario and export checkpoint history evidence."""
+    cfg = yaml.safe_load(config.read_text(encoding="utf-8"))
+    scenarios = load_scenarios(cfg["scenarios_path"])
+    checkpointer = build_checkpointer(cfg.get("checkpointer", "memory"), cfg.get("database_url"))
+    graph = build_graph(checkpointer=checkpointer)
+    histories = [_run_history_scenario(graph, scenario) for scenario in scenarios]
+    payload = {
+        "total_scenarios": len(histories),
+        "scenario_ids": [item["scenario_id"] for item in histories],
+        "histories": histories,
+    }
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(
+        json.dumps(payload, indent=2, ensure_ascii=False, default=str),
+        encoding="utf-8",
+    )
+    typer.echo(f"Wrote all checkpoint histories to {output}")
 
 
 if __name__ == "__main__":

@@ -220,6 +220,14 @@ def summarize_history_artifact(payload: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def history_items_from_payload(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    """Normalize single-history and all-history artifact formats."""
+    histories = payload.get("histories")
+    if isinstance(histories, list):
+        return [item for item in histories if isinstance(item, dict)]
+    return [payload] if payload else []
+
+
 def _render_evidence_tab() -> None:
     import streamlit as st
 
@@ -236,7 +244,22 @@ def _render_evidence_tab() -> None:
         st.warning("State history not found. Run `demo-history` from RUNNING.md.")
         return
 
-    summary = summarize_history_artifact(history_payload)
+    histories = history_items_from_payload(history_payload)
+    if not histories:
+        st.warning("State history artifact did not include any histories.")
+        return
+
+    history_labels = [
+        f"{item.get('scenario_id', 'unknown')} | {item.get('actual_route', 'unknown')}"
+        for item in histories
+    ]
+    selected_label = cast(str, st.selectbox("History scenario", history_labels, index=0))
+    selected_history = histories[history_labels.index(selected_label)]
+
+    if "total_scenarios" in history_payload:
+        st.caption(f"All-scenario history artifact: {history_payload['total_scenarios']} scenarios")
+
+    summary = summarize_history_artifact(selected_history)
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Scenario", str(summary["scenario_id"]))
     c2.metric("Thread", str(summary["thread_id"]))
@@ -251,11 +274,11 @@ def _render_evidence_tab() -> None:
         }
     )
 
-    history = history_payload.get("history", []) or []
+    history = selected_history.get("history", []) or []
     st.dataframe(history, use_container_width=True, hide_index=True)
 
     with st.expander("Raw checkpoint history JSON"):
-        st.json(history_payload)
+        st.json(selected_history)
 
 
 def main() -> None:

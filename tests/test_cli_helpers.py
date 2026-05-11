@@ -2,7 +2,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from langgraph_agent_lab.cli import _find_scenario, _snapshot_to_record
+from langgraph_agent_lab.cli import _find_scenario, _run_history_scenario, _snapshot_to_record
 from langgraph_agent_lab.state import Route, Scenario
 
 
@@ -41,3 +41,30 @@ def test_find_scenario_rejects_unknown_id():
 
     with pytest.raises(Exception, match="Unknown scenario_id=missing"):
         _find_scenario([scenario], "missing")
+
+
+def test_run_history_scenario_exports_history_shape():
+    class FakeGraph:
+        def invoke(self, state, config):
+            return {"route": "simple", "final_answer": "ok"}
+
+        def get_state_history(self, config):
+            return [
+                SimpleNamespace(
+                    values={
+                        "scenario_id": "S",
+                        "route": "simple",
+                        "attempt": 0,
+                        "events": [],
+                    },
+                    metadata={"source": "loop"},
+                    next=(),
+                )
+            ]
+
+    scenario = Scenario(id="S", query="hello", expected_route=Route.SIMPLE)
+    payload = _run_history_scenario(FakeGraph(), scenario)
+
+    assert payload["scenario_id"] == "S"
+    assert payload["history_length"] == 1
+    assert payload["history"][0]["route"] == "simple"

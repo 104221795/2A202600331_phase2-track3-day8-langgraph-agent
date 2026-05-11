@@ -1,6 +1,7 @@
 from langgraph_agent_lab.nodes import classify_node, intake_node
 from langgraph_agent_lab.state import Route, Scenario
 from langgraph_agent_lab.ui import (
+    history_items_from_payload,
     load_demo_scenarios,
     load_json_artifact,
     load_text_artifact,
@@ -114,3 +115,12 @@ def test_ui_history_summary_counts_retry_evidence():
     assert summary["scenario_id"] == "S09"
     assert summary["history_length"] == 2
     assert summary["retry_evidence_count"] == 1
+
+
+def test_ui_history_payload_supports_single_and_all_formats():
+    single = {"scenario_id": "S1", "history": []}
+    all_payload = {"histories": [{"scenario_id": "S1"}, {"scenario_id": "S2"}]}
+
+    assert history_items_from_payload(single) == [single]
+    assert [item["scenario_id"] for item in history_items_from_payload(all_payload)] == ["S1", "S2"]
+    assert history_items_from_payload({}) == []
