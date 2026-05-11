@@ -4,9 +4,14 @@ from __future__ import annotations
 
 from typing import Any
 
-from .graph import build_graph
-from .persistence import build_checkpointer
-from .state import Route, Scenario, initial_state
+try:
+    from .graph import build_graph
+    from .persistence import build_checkpointer
+    from .state import Route, Scenario, initial_state
+except ImportError:  # pragma: no cover - Streamlit executes files as scripts
+    from langgraph_agent_lab.graph import build_graph
+    from langgraph_agent_lab.persistence import build_checkpointer
+    from langgraph_agent_lab.state import Route, Scenario, initial_state
 
 
 def run_ticket(
