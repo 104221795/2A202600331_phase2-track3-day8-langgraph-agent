@@ -47,14 +47,22 @@ Every branch terminates through `finalize`, and retry routing is guarded by
 | S05_error | error | error | yes | 2 | 0 |
 | S06_delete | risky | risky | yes | 0 | 1 |
 | S07_dead_letter | error | error | yes | 1 | 0 |
+| S08_cancel_priority | risky | risky | yes | 0 | 1 |
+| S09_tool_retry_success | tool | tool | yes | 2 | 0 |
+| S10_vague_this | missing_info | missing_info | yes | 0 | 0 |
+| S11_search_customer | tool | tool | yes | 0 | 0 |
+| S12_risky_error_conflict | risky | risky | yes | 0 | 1 |
+| S13_crash_dead_letter | error | error | yes | 1 | 0 |
+| S14_remove_lookup_conflict | risky | risky | yes | 0 | 1 |
+| S15_safe_default | simple | simple | yes | 0 | 0 |
 
 ## 5. Metrics summary
 
-- Total scenarios: 7
+- Total scenarios: 15
 - Success rate: 100.00%
-- Average nodes visited: 6.43
-- Total retries: 3
-- Total interrupts: 2
+- Average nodes visited: 6.67
+- Total retries: 6
+- Total interrupts: 5
 - Resume / state-history evidence observed: True
 
 ## 6. Failure analysis

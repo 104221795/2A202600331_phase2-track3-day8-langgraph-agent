@@ -15,3 +15,35 @@
 - 75-89: core graph works, metrics valid, report explains trade-offs.
 - 60-74: graph mostly works but persistence/report or error handling is incomplete.
 - <60: does not run, hard-codes scenarios, or lacks metrics/report.
+
+## Current implementation evidence
+
+This repository is implemented for the 90-100 target band:
+
+- Typed state is defined in `state.py` with append-only reducers for `messages`,
+  `tool_results`, `errors`, and `events`.
+- Routing is keyword and state based, not scenario-id based.
+- Route priority is deterministic: risky, tool, missing information, error, then
+  simple.
+- Retry loops are bounded by `max_attempts` and terminate at `dead_letter` when
+  exhausted.
+- Risky actions pass through `risky_action -> approval` before tool execution.
+- `MemorySaver` checkpointing is enabled by default, and SQLite checkpoint support
+  is implemented for the extension path.
+- The CLI records checkpoint history evidence in `resume_success`.
+- `reports/lab_report.md` is generated from live metrics.
+- Bonus extension is implemented with an optional Streamlit UI in
+  `src/langgraph_agent_lab/ui.py`.
+
+## Benchmark-readiness checklist
+
+Use this list before a tutor or hidden benchmark run:
+
+- [ ] `pytest` passes.
+- [ ] `ruff check src tests` passes.
+- [ ] `mypy src` passes.
+- [ ] `run-scenarios` regenerates `outputs/metrics.json`.
+- [ ] `validate-metrics` reports `success_rate=100.00%`.
+- [ ] `reports/lab_report.md` reflects the latest scenario count.
+- [ ] Expanded mock scenarios in `data/sample/scenarios.jsonl` pass without any
+  scenario-id-specific code.

@@ -5,3 +5,11 @@
 {"id":"S05_error","query":"Timeout failure while processing request","expected_route":"error","requires_approval":false,"should_retry":true,"tags":["retry"]}
 {"id":"S06_delete","query":"Delete customer account after support verification","expected_route":"risky","requires_approval":true,"should_retry":false,"tags":["hitl","destructive"]}
 {"id":"S07_dead_letter","query":"System failure cannot recover after multiple attempts","expected_route":"error","requires_approval":false,"should_retry":true,"max_attempts":1,"tags":["dead_letter","retry"]}
+{"id":"S08_cancel_priority","query":"Cancel order 98765 after checking delivery status","expected_route":"risky","requires_approval":true,"should_retry":false,"tags":["benchmark","priority","risky","tool_conflict"]}
+{"id":"S09_tool_retry_success","query":"Check shipment status because the order lookup service is unavailable","expected_route":"tool","requires_approval":false,"should_retry":true,"max_attempts":3,"tags":["benchmark","tool","retry","priority"]}
+{"id":"S10_vague_this","query":"Can you help with this?","expected_route":"missing_info","requires_approval":false,"should_retry":false,"tags":["benchmark","clarification","vague"]}
+{"id":"S11_search_customer","query":"Find customer account details for support case ABC-42","expected_route":"tool","requires_approval":false,"should_retry":false,"tags":["benchmark","tool","lookup"]}
+{"id":"S12_risky_error_conflict","query":"Refund the customer even though the email service has timeout errors","expected_route":"risky","requires_approval":true,"should_retry":false,"tags":["benchmark","priority","risky","error_conflict"]}
+{"id":"S13_crash_dead_letter","query":"Crash error unavailable cannot recover in billing workflow","expected_route":"error","requires_approval":false,"should_retry":true,"max_attempts":1,"tags":["benchmark","dead_letter","error"]}
+{"id":"S14_remove_lookup_conflict","query":"Remove this account and lookup the cancellation record","expected_route":"risky","requires_approval":true,"should_retry":false,"tags":["benchmark","priority","risky","tool_conflict"]}
+{"id":"S15_safe_default","query":"Where can I update my notification preferences?","expected_route":"simple","requires_approval":false,"should_retry":false,"tags":["benchmark","simple","default"]}
